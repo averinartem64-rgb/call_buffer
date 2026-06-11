@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call-Буфер Оператора v2.0</title>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --surface-color: #1a1a1e;
+            --input-bg: #26262b;
+            --text-color: #e4e4e7;
+            --text-muted: #a1a1aa;
+            --accent-color: #10b981;
+            --accent-hover: #059669;
+            --border-color: #3f3f46;
+            --danger-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ХЕДЕР И ЛЕНТА ЛИДОВ */
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            height: 60px;
+        }
+
+        .logo {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            white-space: nowrap;
+        }
+
+        .history-ribbon {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            margin: 0 20px;
+            flex-grow: 1;
+            padding-bottom: 5px;
+        }
+
+        .history-ribbon::-webkit-scrollbar { height: 4px; }
+        .history-ribbon::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+
+        .lead-badge {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .lead-badge:hover { border-color: var(--accent-color); }
+
+        .report-btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .report-btn:hover { background-color: #2563eb; }
+
+        /* ОСНОВНОЙ КОНТЕНЕР */
+        main {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .form-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 600px;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .form-container h2 {
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.4rem;
+            letter-spacing: 0.5px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .form-control:focus { border-color: var(--accent-color); }
+
+        /* КНОПКИ ВЫБОРА (РАДИО) */
+        .radio-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .region-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .radio-btn { display: none; }
+        .radio-label {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .radio-btn:checked + .radio-label {
+            background-color: rgba(16, 185, 129, 0.15);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* ДИНАМИЧЕСКИЕ БЛОКИ */
+        .conditional-block {
+            display: none;
+            background-color: rgba(255,255,255,0.02);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px dashed var(--border-color);
+            margin-top: 5px;
+        }
+
+        .quick-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .quick-tag-btn {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .quick-tag-btn:hover { border-color: var(--text-color); color: var(--text-color); }
+
+        .submit-btn {
+            width: 100%;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: background-color 0.2s;
+        }
+        .submit-btn:hover { background-color: var(--accent-hover); }
+
+        /* МОДАЛЬНОЕ ОКНО */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            width: 95%;
+            max-width: 1000px;
+            max-height: 85vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .close-modal { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+        .modal-body { padding: 15px 20px; overflow-y: auto; flex-grow: 1; }
+
+        /* ТАБЛИЦА ОТЧЕТА */
+        .report-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        .report-table th, .report-table td { padding: 10px; border-bottom: 1px solid var(--border-color); }
+        .report-table th { color: var(--text-muted); font-weight: 600; }
+        
+        .copy-btn {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        .copy-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+        
+        .clear-btn {
+            background-color: transparent;
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .clear-btn:hover { background-color: rgba(239, 68, 68, 0.1); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">⚡ CALL-BUFFER v2</div>
+        <div class="history-ribbon" id="historyRibbon"></div>
+        <button class="report-btn" onclick="openModal()">📊 Отчет</button>
+    </header>
+
+    <main>
+        <div class="form-container">
+            <h2>ДАННЫЕ ТЕКУЩЕГО ЗВОНКА</h2>
+            <form id="leadForm" onsubmit="saveLead(event)">
+                <div class="form-grid">
+                    
+                    <div class="form-group">
+                        <label for="clientPhone">Номер *</label>
+                        <input type="tel" id="clientPhone" class="form-control" placeholder="+7 (___) ___-__-__" required autocomplete="off" autofocus>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="clientName">Имя клиента *</label>
+                        <input type="text" id="clientName" class="form-control" placeholder="Введите имя" required autocomplete="off">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="clientTag">Тег *</label>
+                        <input type="text" id="clientTag" class="form-control" placeholder="Например: Повторный" required autocomplete="off">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="carModel">Марка/модель *</label>
+                        <input type="text" id="carModel" class="form-control" placeholder="Chery Tiggo 4" required autocomplete="off">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="criteria">Критерии *</label>
+                        <input type="text" id="criteria" class="form-control" placeholder="Цена до 1.5 млн, автомат, белый цвет" required autocomplete="off">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Перевели на менеджера? *</label>
+                        <div class="radio-grid">
+                            <input type="radio" id="transferYes" name="transfer" value="Да" checked onclick="toggleTransferFields()">
+                            <label for="transferYes" class="radio-label">Да</label>
+
+                            <input type="radio" id="transferNo" name="transfer" value="Нет" onclick="toggleTransferFields()">
+                            <label for="transferNo" class="radio-label">Нет</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="blockTransferYes" class="conditional-block" style="display: block;">
+                    <div class="form-group style-none">
+                        <label>Куда перевели? *</label>
+                        <div class="region-grid">
+                            <input type="radio" id="regMSK" name="region" value="МСК" checked>
+                            <label for="regMSK" class="radio-label" title="МСК">МСК</label>
+
+                            <input type="radio" id="regSPB" name="region" value="СПБ">
+                            <label for="regSPB" class="radio-label" title="СПБ">СПБ</label>
+
+                            <input type="radio" id="regNearMSK" name="region" value="Ближайшие города МСК">
+                            <label for="regNearMSK" class="radio-label" title="Ближайшие города МСК">Ближ. МСК</label>
+
+                            <input type="radio" id="regNearSPB" name="region" value="Ближайшие города СПБ">
+                            <label for="regNearSPB" class="radio-label" title="Ближайшие города СПБ">Ближ. СПБ</label>
+
+                            <input type="radio" id="regEKB" name="region" value="ЕКБ">
+                            <label for="regEKB" class="radio-label" title="ЕКБ">ЕКБ</label>
+
+                            <input type="radio" id="regChery" name="region" value="Черри/Тенет СПБ Шувалово">
+                            <label for="regChery" class="radio-label" title="Черри/Тенет СПБ Шувалово">Шувалово</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="blockTransferNo" class="conditional-block">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="failReason">Почему не перевели на менеджера?</label>
+                        <input type="text" id="failReason" class="form-control" placeholder="Укажите причину" autocomplete="off">
+                        <div class="quick-tags">
+                            <button type="button" class="quick-tag-btn" onclick="setFailReason('Техпроблема')">🛠 Техпроблема</button>
+                            <button type="button" class="quick-tag-btn" onclick="setFailReason('Линия была занята')">📞 Линия занята</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">СОХРАНИТЬ ЛИД (Enter)</button>
+            </form>
+        </div>
+    </main>
+
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Черновик отчетов для Google Формы</h3>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <button class="clear-btn" onclick="clearAllLeads()">🗑 Очистить базу за день</button>
+                    <button class="close-modal" onclick="closeModal()">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Номер</th>
+                            <th>Имя</th>
+                            <th>Тег</th>
+                            <th>Перевод?</th>
+                            <th>Куда / Почему</th>
+                            <th>Марка</th>
+                            <th>Критерии</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let leads = JSON.parse(localStorage.getItem('operator_leads_v2')) || [];
+
+        // Управление маской телефона
+        document.getElementById('clientPhone').addEventListener('input', function (e) {
+            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+            e.target.value = !x[2] ? x[1] : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
+        });
+
+        // Переключение видимости зависимых полей
+        function toggleTransferFields() {
+            const isYes = document.getElementById('transferYes').checked;
+            document.getElementById('blockTransferYes').style.display = isYes ? 'block' : 'none';
+            document.getElementById('blockTransferNo').style.display = isYes ? 'none' : 'block';
+            
+            // Сбрасываем / ставим обязательность полей внутри блоков
+            if(isYes) {
+                document.getElementById('failReason').value = '';
+            }
+        }
+
+        // Кнопки автоподстановки причины
+        function setFailReason(text) {
+            document.getElementById('failReason').value = text;
+        }
+
+        // Сохранение лида
+        function saveLead(event) {
+            event.preventDefault();
+
+            const phone = document.getElementById('clientPhone').value.trim();
+            const name = document.getElementById('clientName').value.trim();
+            const tag = document.getElementById('clientTag').value.trim();
+            const car = document.getElementById('carModel').value.trim();
+            const criteria = document.getElementById('criteria').value.trim();
+            const transfer = document.querySelector('input[name="transfer"]:checked').value;
+            
+            let details = '';
+            if (transfer === 'Да') {
+                details = document.querySelector('input[name="region"]:checked').value;
+            } else {
+                details = document.getElementById('failReason').value.trim() || 'Не указано';
+            }
+
+            const newLead = { id: Date.now(), phone, name, tag, transfer, details, car, criteria };
+            
+            leads.unshift(newLead);
+            localStorage.setItem('operator_leads_v2', JSON.stringify(leads));
+
+            // Быстрый сброс формы и фокус обратно на ввод номера
+            document.getElementById('leadForm').reset();
+            document.getElementById('transferYes').checked = true;
+            document.getElementById('regMSK').checked = true;
+            toggleTransferFields();
+            document.getElementById('clientPhone').focus();
+
+            updateUI();
+        }
+
+        // Обновление ленты и таблицы
+        function updateUI() {
+            const ribbon = document.getElementById('historyRibbon');
+            ribbon.innerHTML = '';
+            leads.slice(0, 6).forEach(lead => {
+                const badge = document.createElement('div');
+                badge.className = 'lead-badge';
+                badge.innerText = `${lead.name} (${lead.transfer === 'Да' ? '✅' : '❌'})`;
+                badge.title = `Клик, чтобы скопировать номер телефона`;
+                badge.onclick = () => {
+                    navigator.clipboard.writeText(lead.phone);
+                };
+                ribbon.appendChild(badge);
+            });
+
+            const tableBody = document.getElementById('reportTableBody');
+            tableBody.innerHTML = '';
+            
+            if(leads.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:30px;">Буфер пуст</td></tr>`;
+                return;
+            }
+
+            leads.forEach(lead => {
+                const row = document.createElement('tr');
+                
+                // Текст для копирования отдельного элемента
+                const rowText = `${lead.phone}\t${lead.name}\t${lead.tag}\t${lead.transfer}\t${lead.details}\t${lead.car}\t${lead.criteria}`;
+
+                row.innerHTML = `
+                    <td>${lead.phone}</td>
+                    <td><b>${lead.name}</b></td>
+                    <td><span style="color:var(--text-muted)">${lead.tag}</span></td>
+                    <td>${lead.transfer === 'Да' ? '🟢 Да' : '🔴 Нет'}</td>
+                    <td><i>${lead.details}</i></td>
+                    <td>${lead.car}</td>
+                    <td>${lead.criteria}</td>
+                    <td>
+                        <button class="copy-btn" onclick="copyToClipboard('${rowText}', this)">📋 Копировать</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = button.innerText;
+                button.innerText = '✅ Готово';
+                button.style.borderColor = 'var(--accent-color)';
+                setTimeout(() => { button.innerText = orig; button.style.borderColor = 'var(--border-color)'; }, 1000);
+            });
+        }
+
+        function clearAllLeads() {
+            if(confirm('Ты уверен, что хочешь очистить все лиды за сегодня?')) {
+                leads = [];
+                localStorage.removeItem('operator_leads_v2');
+                updateUI();
+            }
+        }
+
+        function openModal() { document.getElementById('reportModal').style.display = 'flex'; updateUI(); }
+        function closeModal() { document.getElementById('reportModal').style.display = 'none'; }
+        window.onclick = function(e) { if (e.target == document.getElementById('reportModal')) closeModal(); }
+
+        updateUI();
+    </script>
+</body>
+</html>
