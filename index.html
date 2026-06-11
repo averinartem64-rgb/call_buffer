@@ -15,6 +15,7 @@
             --accent-hover: #059669;
             --border-color: #3f3f46;
             --danger-color: #ef4444;
+            --warning-color: #f59e0b;
         }
 
         * {
@@ -74,6 +75,7 @@
             transition: border-color 0.2s;
         }
         .lead-badge:hover { border-color: var(--accent-color); }
+        .lead-badge.callback-badge { border-color: var(--warning-color); }
 
         .report-btn {
             background-color: #3b82f6;
@@ -146,7 +148,7 @@
         }
         .form-control:focus { border-color: var(--accent-color); }
 
-        /* КНОПКИ ВЫБОРА (РАДИО) */
+        /* КНОПКИ ВЫБОРА (РАДИО) И ЧЕКБОКС */
         .radio-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -171,12 +173,38 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            display: block;
         }
-        .radio-btn:checked + .radio-label {
+        input[type="radio"]:checked + .radio-label {
             background-color: rgba(16, 185, 129, 0.15);
             border-color: var(--accent-color);
             color: var(--accent-color);
             font-weight: bold;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .checkbox-container:hover {
+            border-color: var(--warning-color);
+        }
+        .checkbox-container input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--warning-color);
+            cursor: pointer;
+        }
+        .checkbox-container span {
+            font-size: 0.9rem;
+            color: var(--text-color);
         }
 
         /* ДИНАМИЧЕСКИЕ БЛОКИ */
@@ -219,6 +247,35 @@
             transition: background-color 0.2s;
         }
         .submit-btn:hover { background-color: var(--accent-hover); }
+
+        /* ТАБЫ В МОДАЛКЕ */
+        .modal-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            background-color: var(--input-bg);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .tab-btn.active {
+            background-color: rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .tab-btn.active.tab-callback {
+            background-color: rgba(245, 158, 11, 0.15);
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+        }
 
         /* МОДАЛЬНОЕ ОКНО */
         .modal {
@@ -283,9 +340,9 @@
 <body>
 
     <header>
-        <div class="logo">⚡ CALL-BUFFER v2</div>
+        <div class="logo">⚡ CALL-BUFFER v2.1</div>
         <div class="history-ribbon" id="historyRibbon"></div>
-        <button class="report-btn" onclick="openModal()">📊 Отчет</button>
+        <button class="report-btn" onclick="openModal()">📊 База данных</button>
     </header>
 
     <main>
@@ -315,19 +372,27 @@
                     </div>
 
                     <div class="form-group full-width">
-                        <label for="criteria">Критерии *</label>
+                        <label for="criteria">Criteria / Условия покупки *</label>
                         <input type="text" id="criteria" class="form-control" placeholder="Цена от 1.5 млн, автомат, белый цвет" required autocomplete="off">
                     </div>
 
                     <div class="form-group full-width">
                         <label>Перевели на менеджера? *</label>
                         <div class="radio-grid">
-                            <input type="radio" id="transferYes" name="transfer" value="Да" checked onclick="toggleTransferFields()">
+                            <input type="radio" id="transferYes" name="transfer" value="Да" checked onclick="toggleTransferFields()" style="display:none;">
                             <label for="transferYes" class="radio-label">Да</label>
 
-                            <input type="radio" id="transferNo" name="transfer" value="Нет" onclick="toggleTransferFields()">
+                            <input type="radio" id="transferNo" name="transfer" value="Нет" onclick="toggleTransferFields()" style="display:none;">
                             <label for="transferNo" class="radio-label">Нет</label>
                         </div>
+                    </div>
+
+                    <!-- НОВОЕ ПОЛЕ: ЧЕКБОКС ПЕРЕЗВОНА -->
+                    <div class="form-group full-width">
+                        <label class="checkbox-container" for="needCallback">
+                            <input type="checkbox" id="needCallback">
+                            <span>⏳ Нужен перезвон (клиент попросил набрать позже)</span>
+                        </label>
                     </div>
                 </div>
 
@@ -335,22 +400,22 @@
                     <div class="form-group style-none">
                         <label>Куда перевели? *</label>
                         <div class="region-grid">
-                            <input type="radio" id="regMSK" name="region" value="МСК" checked>
+                            <input type="radio" id="regMSK" name="region" value="МСК" checked style="display:none;">
                             <label for="regMSK" class="radio-label" title="МСК">МСК</label>
 
-                            <input type="radio" id="regSPB" name="region" value="СПБ">
+                            <input type="radio" id="regSPB" name="region" value="СПБ" style="display:none;">
                             <label for="regSPB" class="radio-label" title="СПБ">СПБ</label>
 
-                            <input type="radio" id="regNearMSK" name="region" value="Ближайшие города МСК">
+                            <input type="radio" id="regNearMSK" name="region" value="Ближайшие города МСК" style="display:none;">
                             <label for="regNearMSK" class="radio-label" title="Ближайшие города МСК">Ближ. МСК</label>
 
-                            <input type="radio" id="regNearSPB" name="region" value="Ближайшие города СПБ">
+                            <input type="radio" id="regNearSPB" name="region" value="Ближайшие города СПБ" style="display:none;">
                             <label for="regNearSPB" class="radio-label" title="Ближайшие города СПБ">Ближ. СПБ</label>
 
-                            <input type="radio" id="regEKB" name="region" value="ЕКБ">
+                            <input type="radio" id="regEKB" name="region" value="ЕКБ" style="display:none;">
                             <label for="regEKB" class="radio-label" title="ЕКБ">ЕКБ</label>
 
-                            <input type="radio" id="regChery" name="region" value="Черри/Тенет СПБ Шувалово">
+                            <input type="radio" id="regChery" name="region" value="Черри/Тенет СПБ Шувалово" style="display:none;">
                             <label for="regChery" class="radio-label" title="Черри/Тенет СПБ Шувалово">Шувалово</label>
                         </div>
                     </div>
@@ -367,7 +432,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="submit-btn">СОХРАНИТЬ ЛИД (Enter)</button>
+                <button type="submit" class="submit-btn">СОХРАНИТЬ ДАННЫЕ (Enter)</button>
             </form>
         </div>
     </main>
@@ -375,9 +440,13 @@
     <div id="reportModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Черновик отчетов для Google Формы</h3>
+                <!-- ВКЛАДКИ / ТАБЫ ДЛЯ ПЕРЕКЛЮЧЕНИЯ БАЗ -->
+                <div class="modal-tabs">
+                    <button id="tabLeadsBtn" class="tab-btn active" onclick="switchTab('leads')">📋 Отчет (Google Форма)</button>
+                    <button id="tabCallbacksBtn" class="tab-btn tab-callback" onclick="switchTab('callbacks')">⏳ Список Перезвонов</button>
+                </div>
                 <div style="display: flex; gap: 15px; align-items: center;">
-                    <button class="clear-btn" onclick="clearAllLeads()">🗑 Очистить базу за день</button>
+                    <button class="clear-btn" id="clearDataBtn" onclick="clearCurrentDatabase()">🗑 Очистить эту базу</button>
                     <button class="close-modal" onclick="closeModal()">&times;</button>
                 </div>
             </div>
@@ -403,6 +472,8 @@
 
     <script>
         let leads = JSON.parse(localStorage.getItem('operator_leads_v2')) || [];
+        let callbacks = JSON.parse(localStorage.getItem('operator_callbacks_v2')) || [];
+        let currentTab = 'leads'; // Текущая открытая вкладка в модалке
 
         // Управление маской телефона
         document.getElementById('clientPhone').addEventListener('input', function (e) {
@@ -416,7 +487,6 @@
             document.getElementById('blockTransferYes').style.display = isYes ? 'block' : 'none';
             document.getElementById('blockTransferNo').style.display = isYes ? 'none' : 'block';
             
-            // Сбрасываем / ставим обязательность полей внутри блоков
             if(isYes) {
                 document.getElementById('failReason').value = '';
             }
@@ -427,7 +497,15 @@
             document.getElementById('failReason').value = text;
         }
 
-        // Сохранение лида
+        // Переключение табов в модальном окне
+        function switchTab(tabName) {
+            currentTab = tabName;
+            document.getElementById('tabLeadsBtn').classList.toggle('active', tabName === 'leads');
+            document.getElementById('tabCallbacksBtn').classList.toggle('active', tabName === 'callbacks');
+            updateUI();
+        }
+
+        // Сохранение лида или перезвона
         function saveLead(event) {
             event.preventDefault();
 
@@ -437,6 +515,7 @@
             const car = document.getElementById('carModel').value.trim();
             const criteria = document.getElementById('criteria').value.trim();
             const transfer = document.querySelector('input[name="transfer"]:checked').value;
+            const needCallback = document.getElementById('needCallback').checked;
             
             let details = '';
             if (transfer === 'Да') {
@@ -445,12 +524,19 @@
                 details = document.getElementById('failReason').value.trim() || 'Не указано';
             }
 
-            const newLead = { id: Date.now(), phone, name, tag, transfer, details, car, criteria };
+            const newRecord = { id: Date.now(), phone, name, tag, transfer, details, car, criteria, isCallback: needCallback };
             
-            leads.unshift(newLead);
-            localStorage.setItem('operator_leads_v2', JSON.stringify(leads));
+            if (needCallback) {
+                // Если стоит галка, кидаем в массив перезвонов
+                callbacks.unshift(newRecord);
+                localStorage.setItem('operator_callbacks_v2', JSON.stringify(callbacks));
+            } else {
+                // Иначе — в обычные отчеты
+                leads.unshift(newRecord);
+                localStorage.setItem('operator_leads_v2', JSON.stringify(leads));
+            }
 
-            // Быстрый сброс формы и фокус обратно на ввод номера
+            // Полный сброс формы
             document.getElementById('leadForm').reset();
             document.getElementById('transferYes').checked = true;
             document.getElementById('regMSK').checked = true;
@@ -464,39 +550,50 @@
         function updateUI() {
             const ribbon = document.getElementById('historyRibbon');
             ribbon.innerHTML = '';
-            leads.slice(0, 6).forEach(lead => {
+            
+            // В верхней ленте выводим последние 6 записей из ОБЕИХ баз для быстрого доступа к номерам
+            const combinedRecent = [...leads, ...callbacks]
+                .sort((a, b) => b.id - a.id)
+                .slice(0, 6);
+
+            combinedRecent.forEach(item => {
                 const badge = document.createElement('div');
-                badge.className = 'lead-badge';
-                badge.innerText = `${lead.name} (${lead.transfer === 'Да' ? '✅' : '❌'})`;
-                badge.title = `Клик, чтобы скопировать номер телефона`;
+                badge.className = 'lead-badge' + (item.isCallback ? ' callback-badge' : '');
+                
+                let icon = item.transfer === 'Да' ? '✅' : '❌';
+                if (item.isCallback) icon = '⏳';
+                
+                badge.innerText = `${item.name} (${icon})`;
+                badge.title = `Клик, чтобы скопировать номер телефона клиента ${item.name}`;
                 badge.onclick = () => {
-                    navigator.clipboard.writeText(lead.phone);
+                    navigator.clipboard.writeText(item.phone);
                 };
                 ribbon.appendChild(badge);
             });
 
+            // Рендер таблицы в зависимости от активного таба
             const tableBody = document.getElementById('reportTableBody');
             tableBody.innerHTML = '';
             
-            if(leads.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:30px;">Буфер пуст</td></tr>`;
+            const activeData = currentTab === 'leads' ? leads : callbacks;
+
+            if(activeData.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:30px;">Тут пока пусто</td></tr>`;
                 return;
             }
 
-            leads.forEach(lead => {
+            activeData.forEach(item => {
                 const row = document.createElement('tr');
-                
-                // Текст для копирования отдельного элемента
-                const rowText = `${lead.phone}\t${lead.name}\t${lead.tag}\t${lead.transfer}\t${lead.details}\t${lead.car}\t${lead.criteria}`;
+                const rowText = `${item.phone}\t${item.name}\t${item.tag}\t${item.transfer}\t${item.details}\t${item.car}\t${item.criteria}`;
 
                 row.innerHTML = `
-                    <td>${lead.phone}</td>
-                    <td><b>${lead.name}</b></td>
-                    <td><span style="color:var(--text-muted)">${lead.tag}</span></td>
-                    <td>${lead.transfer === 'Да' ? '🟢 Да' : '🔴 Нет'}</td>
-                    <td><i>${lead.details}</i></td>
-                    <td>${lead.car}</td>
-                    <td>${lead.criteria}</td>
+                    <td>${item.phone}</td>
+                    <td><b>${item.name}</b></td>
+                    <td><span style="color:var(--text-muted)">${item.tag}</span></td>
+                    <td>${item.transfer === 'Да' ? '🟢 Да' : '🔴 Нет'}</td>
+                    <td><i>${item.details}</i></td>
+                    <td>${item.car}</td>
+                    <td>${item.criteria}</td>
                     <td>
                         <button class="copy-btn" onclick="copyToClipboard('${rowText}', this)">📋 Копировать</button>
                     </td>
@@ -514,10 +611,17 @@
             });
         }
 
-        function clearAllLeads() {
-            if(confirm('Ты уверен, что хочешь очистить все лиды за сегодня?')) {
-                leads = [];
-                localStorage.removeItem('operator_leads_v2');
+        // Очистка базы в зависимости от выбранного таба
+        function clearCurrentDatabase() {
+            const dbName = currentTab === 'leads' ? 'отчетов для Google Формы' : 'перезвонов';
+            if(confirm(`Ты уверен, что хочешь полностью очистить базу ${dbName}?`)) {
+                if (currentTab === 'leads') {
+                    leads = [];
+                    localStorage.removeItem('operator_leads_v2');
+                } else {
+                    callbacks = [];
+                    localStorage.removeItem('operator_callbacks_v2');
+                }
                 updateUI();
             }
         }
