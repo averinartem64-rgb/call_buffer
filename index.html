@@ -54,6 +54,7 @@
 
         .history-ribbon {
             display: flex;
+            align-items: center;
             gap: 10px;
             overflow-x: auto;
             margin: 0 20px;
@@ -67,15 +68,33 @@
         .lead-badge {
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
-            padding: 4px 12px;
+            padding: 4px 8px 4px 12px;
             border-radius: 20px;
             font-size: 0.85rem;
             white-space: nowrap;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             transition: all 0.2s;
         }
         .lead-badge:hover { border-color: var(--accent-color); color: var(--accent-hover); }
         .lead-badge.callback-badge { border-color: var(--warning-color); color: var(--warning-color); }
+        
+        .badge-del-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 0 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .badge-del-btn:hover { color: var(--danger-color); background-color: rgba(239, 68, 68, 0.1); }
 
         .report-btn {
             background-color: var(--accent-color);
@@ -153,7 +172,7 @@
         }
         .region-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* Сделал сетку 2х3 для длинных названий */
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
         }
 
@@ -252,7 +271,7 @@
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
             width: 95%;
-            max-width: 1000px;
+            max-width: 1050px;
             max-height: 85vh;
             border-radius: 12px;
             display: flex;
@@ -297,6 +316,12 @@
         .report-table th, .report-table td { padding: 10px; border-bottom: 1px solid var(--border-color); }
         .report-table th { color: var(--text-muted); font-weight: 600; }
         
+        .actions-cell {
+            display: flex;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
         .copy-btn {
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
@@ -305,11 +330,22 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.75rem;
-            white-space: nowrap;
             transition: all 0.2s;
         }
         .copy-btn:hover { border-color: var(--accent-color); color: var(--accent-hover); }
         
+        .row-del-btn {
+            background-color: transparent;
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .row-del-btn:hover { background-color: var(--danger-color); color: white; }
+
         .clear-btn {
             background-color: transparent;
             border: 1px solid var(--danger-color);
@@ -349,7 +385,7 @@
 
                     <div class="form-group">
                         <label for="clientTag">Тег</label>
-                        <input type="text" id="clientTag" class="form-control" placeholder="Уникальный тег" autocomplete="off">
+                        <input type="text" id="clientTag" class="form-control" placeholder="Например: ВТ000" autocomplete="off">
                     </div>
 
                     <div class="form-group">
@@ -417,7 +453,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="submit-btn">СОХРАНИТЬ (Очистить)</button>
+                <button type="submit" class="submit-btn">СОХРАНИТЬ (Enter)</button>
             </form>
         </div>
     </main>
@@ -445,7 +481,7 @@
                             <th>Инфо / Причина</th>
                             <th>Марка/Модель</th>
                             <th>Критерии</th>
-                            <th>Действие</th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody id="reportTableBody"></tbody>
@@ -547,6 +583,24 @@
             document.getElementById('clientPhone').focus();
         }
 
+        // ТОЧЕЧНОЕ УДАЛЕНИЕ ДЛЯ АВТО-БАЗЫ
+        function deleteSingleRecord(id, event) {
+            if (event) event.stopPropagation(); // Чтобы при клике на крестик в ленте не срабатывал клик по бэйджу (копирование)
+            
+            const leadIndex = leads.findIndex(item => item.id === id);
+            if (leadIndex !== -1) {
+                leads.splice(leadIndex, 1);
+                localStorage.setItem('operator_leads_v2', JSON.stringify(leads));
+            } else {
+                const callbackIndex = callbacks.findIndex(item => item.id === id);
+                if (callbackIndex !== -1) {
+                    callbacks.splice(callbackIndex, 1);
+                    localStorage.setItem('operator_callbacks_v2', JSON.stringify(callbacks));
+                }
+            }
+            updateUI();
+        }
+
         function updateUI() {
             const ribbon = document.getElementById('historyRibbon');
             ribbon.innerHTML = '';
@@ -559,12 +613,12 @@
                 let icon = item.transfer === 'Да' ? '✅' : '❌';
                 if (item.isCallback) icon = '⏳';
                 
-                badge.innerText = `${item.name} (${icon})`;
-                badge.onclick = () => { 
-                    if(item.phone !== 'Нет номера') {
-                        navigator.clipboard.writeText(item.phone);
-                    }
-                };
+                badge.innerHTML = `
+                    <span onclick="if('${item.phone}' !== 'Нет номера') navigator.clipboard.writeText('${item.phone}')">
+                        ${item.name} (${icon})
+                    </span>
+                    <button class="badge-del-btn" onclick="deleteSingleRecord(${item.id}, event)">&times;</button>
+                `;
                 ribbon.appendChild(badge);
             });
 
@@ -589,7 +643,10 @@
                     <td><i>${item.details}</i></td>
                     <td>${item.car}</td>
                     <td>${item.criteria}</td>
-                    <td><button class="copy-btn" onclick="copyToClipboard('${rowText}', this)">📋 Копировать</button></td>
+                    <td class="actions-cell">
+                        <button class="copy-btn" onclick="copyToClipboard('${rowText}', this)">📋 Копировать</button>
+                        <button class="row-del-btn" onclick="deleteSingleRecord(${item.id})">🗑 Удалить</button>
+                    </td>
                 `;
                 tableBody.appendChild(row);
             });
