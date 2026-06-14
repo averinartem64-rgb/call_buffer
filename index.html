@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call-Буфер</title>
+    <title>Call-Buffer</title>
     <style>
         :root {
             --bg-color: #0b0713; 
@@ -271,7 +271,7 @@
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
             width: 95%;
-            max-width: 1050px;
+            max-width: 1150px;
             max-height: 85vh;
             border-radius: 12px;
             display: flex;
@@ -313,13 +313,32 @@
         .modal-body { padding: 15px 20px; overflow-y: auto; flex-grow: 1; }
 
         .report-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-        .report-table th, .report-table td { padding: 10px; border-bottom: 1px solid var(--border-color); }
+        .report-table th, .report-table td { padding: 10px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
         .report-table th { color: var(--text-muted); font-weight: 600; }
         
+        /* Стилизация новой ячейки времени над номером */
+        .phone-time-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            white-space: nowrap; /* Запрещаем перенос номера телефона */
+        }
+
+        .time-col {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: normal;
+            letter-spacing: 0.5px;
+        }
+
         .actions-cell {
             display: flex;
             gap: 6px;
             white-space: nowrap;
+            align-items: center; 
+            height: 100%;
         }
 
         .copy-btn {
@@ -384,8 +403,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="clientTag">Тег</label>
-                        <input type="text" id="clientTag" class="form-control" placeholder="Например: ВТ000" autocomplete="off">
+                        <label for="clientTag">Уникальный тег</label>
+                        <input type="text" id="clientTag" class="form-control" placeholder="Например: lms_auto" autocomplete="off">
                     </div>
 
                     <div class="form-group">
@@ -474,7 +493,7 @@
                 <table class="report-table">
                     <thead>
                         <tr>
-                            <th>Номер</th>
+                            <th style="text-align: center; width: 160px;">Время / Номер</th>
                             <th>Имя</th>
                             <th>Тег</th>
                             <th>Перевод</th>
@@ -554,8 +573,12 @@
                 details = document.getElementById('failReason').value.trim() || 'Не указано';
             }
 
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
             const newRecord = { 
                 id: Date.now(), 
+                time: timeString, 
                 phone, 
                 name, 
                 tag, 
@@ -583,9 +606,8 @@
             document.getElementById('clientPhone').focus();
         }
 
-        // ТОЧЕЧНОЕ УДАЛЕНИЕ ДЛЯ АВТО-БАЗЫ
         function deleteSingleRecord(id, event) {
-            if (event) event.stopPropagation(); // Чтобы при клике на крестик в ленте не срабатывал клик по бэйджу (копирование)
+            if (event) event.stopPropagation(); 
             
             const leadIndex = leads.findIndex(item => item.id === id);
             if (leadIndex !== -1) {
@@ -633,19 +655,27 @@
 
             activeData.forEach(item => {
                 const row = document.createElement('tr');
-                const rowText = `${item.phone}\t${item.name}\t${item.tag}\t${item.transfer}\t${item.details}\t${item.car}\t${item.criteria}`;
+                const displayTime = item.time ? item.time : '--:--'; 
+                const rowText = `${displayTime}\t${item.phone}\t${item.name}\t${item.tag}\t${item.transfer}\t${item.details}\t${item.car}\t${item.criteria}`;
 
                 row.innerHTML = `
-                    <td><b>${item.phone}</b></td>
+                    <td>
+                        <div class="phone-time-cell">
+                            <span class="time-col">[${displayTime}]</span>
+                            <b>${item.phone}</b>
+                        </div>
+                    </td>
                     <td>${item.name}</td>
                     <td><span style="color:var(--text-muted)">${item.tag}</span></td>
                     <td>${item.transfer === 'Да' ? '🟣 Да' : '⚪ Нет'}</td>
                     <td><i>${item.details}</i></td>
                     <td>${item.car}</td>
                     <td>${item.criteria}</td>
-                    <td class="actions-cell">
-                        <button class="copy-btn" onclick="copyToClipboard('${rowText}', this)">📋 Копировать</button>
-                        <button class="row-del-btn" onclick="deleteSingleRecord(${item.id})">🗑 Удалить</button>
+                    <td>
+                        <div class="actions-cell">
+                            <button class="copy-btn" onclick="copyToClipboard('${rowText}', this)">📋 Копировать</button>
+                            <button class="row-del-btn" onclick="deleteSingleRecord(${item.id})">🗑 Удалить</button>
+                        </div>
                     </td>
                 `;
                 tableBody.appendChild(row);
