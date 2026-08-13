@@ -41,7 +41,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 10px 20px;
-            height: 60px;
+            min-height: 60px;
         }
 
         .logo {
@@ -117,7 +117,40 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            position: relative;
             overflow-y: auto;
+        }
+
+        .extra-nav-container {
+            position: absolute;
+            left: 30px;
+            top: 30px;
+        }
+
+        .extra-btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #130e22;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .extra-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+        .extra-btn:active {
+            transform: translateY(0);
         }
 
         .form-container {
@@ -377,6 +410,19 @@
             transition: background-color 0.2s;
         }
         .clear-btn:hover { background-color: rgba(239, 68, 68, 0.1); }
+
+        @media (max-width: 950px) {
+            .extra-nav-container {
+                position: static;
+                margin-bottom: 15px;
+                display: flex;
+                justify-content: center;
+            }
+            main {
+                flex-direction: column;
+                justify-content: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
@@ -388,6 +434,12 @@
     </header>
 
     <main>
+        <div class="extra-nav-container">
+            <button class="extra-btn" onclick="goToExtraPage()">
+                ⭐ Допки
+            </button>
+        </div>
+
         <div class="form-container">
             <h2>ДАННЫЕ ТЕКУЩЕГО ЗВОНКА</h2>
             <form id="leadForm" onsubmit="saveLead(event)">
@@ -447,17 +499,20 @@
                             <input type="radio" id="regSpb" name="region" value="СПБ" style="display:none;">
                             <label for="regSpb" class="radio-label">СПБ</label>
 
-                            <input type="radio" id="regNearMsk" name="region" value="Ближайшие города МСК" style="display:none;">
-                            <label for="regNearMsk" class="radio-label">Ближайшие города МСК</label>
-
-                            <input type="radio" id="regNearSpb" name="region" value="Ближайшие города СПБ" style="display:none;">
-                            <label for="regNearSpb" class="radio-label">Ближайшие города СПБ</label>
-
                             <input type="radio" id="regEkb" name="region" value="ЕКБ" style="display:none;">
                             <label for="regEkb" class="radio-label">ЕКБ</label>
 
-                            <input type="radio" id="regCherry" name="region" value="Черри/Тенет СПБ Шувалово" style="display:none;">
-                            <label for="regCherry" class="radio-label">Черри/Тенет СПБ Шувалово</label>
+                            <input type="radio" id="regKrasnodar" name="region" value="Краснодарский Край" style="display:none;">
+                            <label for="regKrasnodar" class="radio-label">Краснодарский Край</label>
+
+                            <input type="radio" id="regChelyabinsk" name="region" value="Челябинск" style="display:none;">
+                            <label for="regChelyabinsk" class="radio-label">Челябинск</label>
+
+                            <input type="radio" id="regVolgograd" name="region" value="Волгоград" style="display:none;">
+                            <label for="regVolgograd" class="radio-label">Волгоград</label>
+
+                            <input type="radio" id="regStavropol" name="region" value="Ставрополь" style="display:none;">
+                            <label for="regStavropol" class="radio-label">Ставрополь</label>
                         </div>
                     </div>
                 </div>
@@ -494,7 +549,7 @@
                 <table class="report-table">
                     <thead>
                         <tr>
-                            <th style="text-align: center; width: 160px;">Время / Номер</th>
+                            <th style="text-align: center; width: 160px;">Дата / Время / Номер</th>
                             <th>Имя</th>
                             <th>Тег</th>
                             <th>Перевод</th>
@@ -547,6 +602,10 @@
             document.getElementById('failReason').value = text; 
         }
 
+        function goToExtraPage() {
+            window.location.href = 'extra.html';
+        }
+
         function switchTab(tabName) {
             currentTab = tabName;
             document.getElementById('tabLeadsBtn').classList.toggle('active', tabName === 'leads');
@@ -575,10 +634,12 @@
             }
 
             const now = new Date();
+            const dateString = now.toLocaleDateString('ru-RU');
             const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
             const newRecord = { 
                 id: Date.now(), 
+                date: dateString,
                 time: timeString, 
                 phone, 
                 name, 
@@ -656,12 +717,14 @@
 
             activeData.forEach(item => {
                 const row = document.createElement('tr');
+                const displayDate = item.date ? item.date : '--.--.----';
                 const displayTime = item.time ? item.time : '--:--'; 
-                const rowText = `${displayTime}\t${item.phone}\t${item.name}\t${item.tag}\t${item.transfer}\t${item.details}\t${item.car}\t${item.criteria}`;
+                const rowText = `${displayDate} ${displayTime}\t${item.phone}\t${item.name}\t${item.tag}\t${item.transfer}\t${item.details}\t${item.car}\t${item.criteria}`;
 
                 row.innerHTML = `
                     <td>
                         <div class="phone-time-cell">
+                            <span class="time-col" style="font-size: 0.7rem; color: var(--accent-hover);">${displayDate}</span>
                             <span class="time-col">[${displayTime}]</span>
                             <b>${item.phone}</b>
                         </div>
