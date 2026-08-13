@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call-Buffer: Допки</title>
+    <style>
+        :root {
+            --bg-yellow: #fef08a;
+            --card-yellow: #fde047;
+            --card-hover: #facc15;
+            --dark-surface: #1e1b18;
+            --dark-bg: #12100e;
+            --text-dark: #292524;
+            --text-light: #f5f5f4;
+            --accent-orange: #d97706;
+            --border-yellow: #eab308;
+            --purple-btn: #8b5cf6;
+            --purple-hover: #7c3aed;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--dark-surface);
+            border-bottom: 2px solid var(--accent-orange);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 25px;
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .page-title {
+            color: var(--card-yellow);
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .back-btn {
+            background-color: transparent;
+            color: var(--purple-btn);
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            text-decoration: none;
+            width: fit-content;
+        }
+        .back-btn:hover {
+            color: var(--purple-hover);
+        }
+
+        .search-container {
+            flex-grow: 1;
+            max-width: 450px;
+        }
+
+        .search-input {
+            width: 100%;
+            background-color: #292524;
+            border: 1px solid var(--accent-orange);
+            color: var(--text-light);
+            padding: 10px 15px;
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+        .search-input::placeholder {
+            color: #a8a29e;
+        }
+
+        .clients-btn {
+            background-color: var(--card-yellow);
+            color: var(--text-dark);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(234, 179, 8, 0.2);
+        }
+        .clients-btn:hover {
+            background-color: var(--card-hover);
+            transform: translateY(-1px);
+        }
+
+        main {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background: linear-gradient(135deg, #12100e 0%, #1c1917 100%);
+        }
+
+        .grid-dealers {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* Карточка дилера */
+        .dealer-card {
+            background-color: var(--bg-yellow);
+            color: var(--text-dark);
+            border-radius: 12px;
+            padding: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);
+            transition: all 0.25s ease;
+            border: 2px solid transparent;
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .dealer-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(234, 179, 8, 0.3);
+            border-color: var(--accent-orange);
+        }
+
+        .dealer-card-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #111;
+        }
+
+        /* Фантомная карточка */
+        .dealer-card.phantom {
+            background-color: transparent;
+            border: 2px dashed var(--accent-orange);
+            color: var(--card-yellow);
+        }
+        .dealer-card.phantom:hover {
+            background-color: rgba(217, 119, 6, 0.1);
+        }
+
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background-color: var(--dark-surface);
+            border: 1px solid var(--accent-orange);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        .modal-content.wide {
+            max-width: 1000px;
+        }
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #332d29;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            color: var(--card-yellow);
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .detail-row {
+            margin-bottom: 15px;
+        }
+        .detail-row label {
+            display: block;
+            color: #a8a29e;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+        .detail-value {
+            background-color: #292524;
+            border: 1px solid #44403c;
+            padding: 10px;
+            border-radius: 6px;
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            background-color: #292524;
+            border: 1px solid #44403c;
+            color: var(--text-light);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            margin-bottom: 12px;
+        }
+        .form-control-custom:focus {
+            border-color: var(--card-yellow);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .btn-delete {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-delete:hover { background-color: #dc2626; }
+
+        .btn-save {
+            background-color: var(--card-yellow);
+            color: var(--text-dark);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        .btn-save:hover { background-color: var(--card-hover); }
+
+        /* Таблица клиентов */
+        .clients-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .clients-table th, .clients-table td {
+            padding: 12px;
+            border-bottom: 1px solid #332d29;
+        }
+        .clients-table th {
+            color: #a8a29e;
+            font-weight: 600;
+        }
+
+        /* Интерактивный селект статуса в таблице */
+        .status-select {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .status-select.status-nedozvon { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #ef4444; }
+        .status-otkaz { background-color: rgba(115, 115, 115, 0.2); color: #d4d4d4; border-color: #737373; }
+        .status-kupil { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; border-color: #22c55e; }
+        .status-lid { background-color: rgba(139, 92, 246, 0.2); color: #a78bfa; border-color: #8b5cf6; }
+
+        .add-client-top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <span class="page-title">ДОПКИ</span>
+            <a href="index.html" class="back-btn">← НАЗАД</a>
+        </div>
+        <div class="search-container">
+            <input type="text" id="citySearch" class="search-input" placeholder="🔍 Поиск карточек по городам..." oninput="filterByCity()">
+        </div>
+        <button class="clients-btn" onclick="openClientsModal()">КЛИЕНТЫ</button>
+    </header>
+
+    <main>
+        <div class="grid-dealers" id="dealersGrid"></div>
+    </main>
+
+    <!-- Модальное окно просмотра карточки дилера -->
+    <div id="dealerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalDealerTitle">Детали дилера</h3>
+                <button class="close-modal" onclick="closeDealerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-row">
+                    <label>Название</label>
+                    <div class="detail-value" id="detName"></div>
+                </div>
+                <div class="detail-row">
+                    <label>Модели</label>
+                    <div class="detail-value" id="detModels"></div>
+                </div>
+                <div class="detail-row">
+                    <label>Цены</label>
+                    <div class="detail-value" id="detPrices"></div>
+                </div>
+                <div class="detail-row">
+                    <label>Способы оплаты</label>
+                    <div class="detail-value" id="detPayment"></div>
+                </div>
+                <div class="detail-row">
+                    <label>Город</label>
+                    <div class="detail-value" id="detCity"></div>
+                </div>
+                <div class="detail-row">
+                    <label>Прочее</label>
+                    <div class="detail-value" id="detOther"></div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-delete" id="deleteDealerBtn">Удалить карточку</button>
+                    <button class="clients-btn" onclick="closeDealerModal()" style="font-size:0.85rem; padding: 8px 16px;">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления нового дилера -->
+    <div id="addDealerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Добавить новый дилерский центр</h3>
+                <button class="close-modal" onclick="closeAddDealerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addDealerForm" onsubmit="saveNewDealer(event)">
+                    <input type="text" id="newTitle" class="form-control-custom" placeholder="Название *" required autocomplete="off">
+                    <input type="text" id="newCity" class="form-control-custom" placeholder="Город *" required autocomplete="off">
+                    <input type="text" id="newModels" class="form-control-custom" placeholder="Модели" autocomplete="off">
+                    <input type="text" id="newPrices" class="form-control-custom" placeholder="Цены" autocomplete="off">
+                    <input type="text" id="newPayment" class="form-control-custom" placeholder="Способы оплаты" autocomplete="off">
+                    <input type="text" id="newOther" class="form-control-custom" placeholder="Прочее" autocomplete="off">
+                    <button type="submit" class="btn-save">Сохранить карточку</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно базы клиентов -->
+    <div id="clientsModal" class="modal">
+        <div class="modal-content wide">
+            <div class="modal-header">
+                <h3>База клиентов для обзвона</h3>
+                <button class="close-modal" onclick="closeClientsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="add-client-top-bar">
+                    <button class="clients-btn" onclick="openAddClientModal()" style="font-size: 0.85rem; padding: 6px 14px;">+ Новый клиент</button>
+                </div>
+                <table class="clients-table">
+                    <thead>
+                        <tr>
+                            <th>Имя</th>
+                            <th>Номер</th>
+                            <th>Город</th>
+                            <th style="width: 170px; text-align: center;">Статус</th>
+                            <th style="width: 80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления клиента -->
+    <div id="addClientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Добавить клиента в базу</h3>
+                <button class="close-modal" onclick="closeAddClientModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addClientForm" onsubmit="saveNewClient(event)">
+                    <input type="text" id="clientName" class="form-control-custom" placeholder="Имя клиента *" required autocomplete="off">
+                    <input type="text" id="clientPhone" class="form-control-custom" placeholder="Номер телефона (только цифры) *" required autocomplete="off" oninput="this.value = this.value.replace(/\D/g, '')">
+                    <input type="text" id="clientCity" class="form-control-custom" placeholder="Город *" required autocomplete="off">
+                    <div class="detail-row" style="margin-bottom: 15px;">
+                        <label>Статус</label>
+                        <select id="clientStatus" class="form-control-custom">
+                            <option value="Лид">Лид</option>
+                            <option value="Недозвон">Недозвон</option>
+                            <option value="Отказ">Отказ</option>
+                            <option value="Купил">Купил</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-save">Сохранить клиента</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dealers = JSON.parse(localStorage.getItem('dealers_data_v1')) || [
+            { id: 1, name: 'МСК (Москва)', city: 'Москва', models: 'Chery, Haval, Geely', prices: 'От 1.8 млн ₽', payment: 'Кредит, Наличные, Трейд-ин', other: 'Строго по записи' },
+            { id: 2, name: 'СПБ (Санкт-Петербург)', city: 'Санкт-Петербург', models: 'Exeed, Omoda', prices: 'От 2.1 млн ₽', payment: 'Лизинг, Кредит', other: 'Зимняя резина в подарок' },
+            { id: 3, name: 'Черри Шувалово', city: 'Санкт-Петербург', models: 'Только Chery', prices: 'Спецпрайс', payment: 'Наличные', other: 'Пост 402' },
+            { id: 4, name: 'ЕКБ (Екатеринбург)', city: 'Екатеринбург', models: 'Geely, Changan', prices: 'От 1.9 млн ₽', payment: 'Кредит', other: 'Часовой пояс +2ч' }
+        ];
+
+        let clients = JSON.parse(localStorage.getItem('clients_data_v1')) || [
+            { id: 1, name: 'Алексей Смирнов', phone: '79991112233', city: 'Москва', status: 'Лид' },
+            { id: 2, name: 'Иван Петров', phone: '79112223344', city: 'Санкт-Петербург', status: 'Недозвон' },
+            { id: 3, name: 'Ольга Васильева', phone: '79223334455', city: 'Екатеринбург', status: 'Купил' },
+            { id: 4, name: 'Дмитрий Соколов', phone: '79004445566', city: 'Москва', status: 'Отказ' }
+        ];
+
+        let currentActiveDealerId = null;
+
+        function renderDealers(dataToRender = dealers) {
+            const grid = document.getElementById('dealersGrid');
+            grid.innerHTML = '';
+
+            dataToRender.forEach(dealer => {
+                const card = document.createElement('div');
+                card.className = 'dealer-card';
+                card.onclick = () => openDealerModal(dealer.id);
+                card.innerHTML = `<span class="dealer-card-title">${dealer.name}</span>`;
+                grid.appendChild(card);
+            });
+
+            const phantomCard = document.createElement('div');
+            phantomCard.className = 'dealer-card phantom';
+            phantomCard.onclick = openAddDealerModal;
+            phantomCard.innerHTML = `<span class="dealer-card-title" style="font-size: 2rem;">+</span>`;
+            grid.appendChild(phantomCard);
+        }
+
+        function filterByCity() {
+            const query = document.getElementById('citySearch').value.toLowerCase().trim();
+            if (!query) {
+                renderDealers(dealers);
+                return;
+            }
+            const filtered = dealers.filter(d => d.city.toLowerCase().includes(query));
+            renderDealers(filtered);
+        }
+
+        function openDealerModal(id) {
+            const dealer = dealers.find(d => d.id === id);
+            if (!dealer) return;
+            currentActiveDealerId = id;
+
+            document.getElementById('modalDealerTitle').innerText = dealer.name;
+            document.getElementById('detName').innerText = dealer.name;
+            document.getElementById('detModels').innerText = dealer.models || '—';
+            document.getElementById('detPrices').innerText = dealer.prices || '—';
+            document.getElementById('detPayment').innerText = dealer.payment || '—';
+            document.getElementById('detCity').innerText = dealer.city || '—';
+            document.getElementById('detOther').innerText = dealer.other || '—';
+
+            document.getElementById('deleteDealerBtn').onclick = function() {
+                deleteDealer(id);
+            };
+
+            document.getElementById('dealerModal').style.display = 'flex';
+        }
+        function closeDealerModal() {
+            document.getElementById('dealerModal').style.display = 'none';
+        }
+
+        function deleteDealer(id) {
+            if (confirm('Точно удалить эту карточку дилера?')) {
+                dealers = dealers.filter(d => d.id !== id);
+                localStorage.setItem('dealers_data_v1', JSON.stringify(dealers));
+                closeDealerModal();
+                renderDealers();
+            }
+        }
+
+        function openAddDealerModal() { document.getElementById('addDealerModal').style.display = 'flex'; }
+        function closeAddDealerModal() { document.getElementById('addDealerModal').style.display = 'none'; }
+
+        function saveNewDealer(e) {
+            e.preventDefault();
+            const newDealer = {
+                id: Date.now(),
+                name: document.getElementById('newTitle').value.trim(),
+                city: document.getElementById('newCity').value.trim(),
+                models: document.getElementById('newModels').value.trim(),
+                prices: document.getElementById('newPrices').value.trim(),
+                payment: document.getElementById('newPayment').value.trim(),
+                other: document.getElementById('newOther').value.trim()
+            };
+            dealers.push(newDealer);
+            localStorage.setItem('dealers_data_v1', JSON.stringify(dealers));
+            document.getElementById('addDealerForm').reset();
+            closeAddDealerModal();
+            renderDealers();
+        }
+
+        function openClientsModal() {
+            renderClientsTable();
+            document.getElementById('clientsModal').style.display = 'flex';
+        }
+        function closeClientsModal() { document.getElementById('clientsModal').style.display = 'none'; }
+
+        function renderClientsTable() {
+            const tbody = document.getElementById('clientsTableBody');
+            tbody.innerHTML = '';
+
+            if (clients.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#a8a29e; padding:20px;">Нет клиентов в базе</td></tr>`;
+                return;
+            }
+
+            clients.forEach(c => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><b>${c.name}</b></td>
+                    <td>${c.phone}</td>
+                    <td>${c.city}</td>
+                    <td style="text-align: center;">
+                        <select class="status-select" onchange="updateClientStatus(${c.id}, this.value)">
+                            <option value="Лид" ${c.status === 'Лид' ? 'selected' : ''}>Лид</option>
+                            <option value="Недозвон" ${c.status === 'Недозвон' ? 'selected' : ''}>Недозвон</option>
+                            <option value="Отказ" ${c.status === 'Отказ' ? 'selected' : ''}>Отказ</option>
+                            <option value="Купил" ${c.status === 'Купил' ? 'selected' : ''}>Купил</option>
+                        </select>
+                    </td>
+                    <td style="text-align: center;"><button class="btn-delete" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteClient(${c.id})">Удалить</button></td>
+                `;
+                
+                const selectElement = row.querySelector('.status-select');
+                applyStatusClass(selectElement, c.status);
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateClientStatus(id, newStatus) {
+            const client = clients.find(c => c.id === id);
+            if (client) {
+                client.status = newStatus;
+                localStorage.setItem('clients_data_v1', JSON.stringify(clients));
+                
+                event.target.blur();
+                applyStatusClass(event.target, newStatus);
+            }
+        }
+
+        function applyStatusClass(selectElement, status) {
+            selectElement.className = 'status-select';
+            if (status === 'Недозвон') selectElement.classList.add('status-nedozvon');
+            else if (status === 'Отказ') selectElement.classList.add('status-otkaz');
+            else if (status === 'Купил') selectElement.classList.add('status-kupil');
+            else selectElement.classList.add('status-lid');
+        }
+
+        function openAddClientModal() { document.getElementById('addClientModal').style.display = 'flex'; }
+        function closeAddClientModal() { document.getElementById('addClientModal').style.display = 'none'; }
+
+        function saveNewClient(e) {
+            e.preventDefault();
+            const newClient = {
+                id: Date.now(),
+                name: document.getElementById('clientName').value.trim(),
+                phone: document.getElementById('clientPhone').value.trim(),
+                city: document.getElementById('clientCity').value.trim(),
+                status: document.getElementById('clientStatus').value
+            };
+            clients.unshift(newClient);
+            localStorage.setItem('clients_data_v1', JSON.stringify(clients));
+            document.getElementById('addClientForm').reset();
+            closeAddClientModal();
+            renderClientsTable();
+        }
+
+        function deleteClient(id) {
+            clients = clients.filter(c => c.id !== id);
+            localStorage.setItem('clients_data_v1', JSON.stringify(clients));
+            renderClientsTable();
+        }
+
+        renderDealers();
+    </script>
+</body>
+</html>
