@@ -15,8 +15,8 @@
             --text-light: #f5f5f4;
             --accent-orange: #d97706;
             --border-yellow: #eab308;
-            --purple-btn: #8b5cf6;
-            --purple-hover: #7c3aed;
+            --back-color: #8400ff;
+            --back-hover: #5500a5;
         }
 
         * {
@@ -60,7 +60,7 @@
 
         .back-btn {
             background-color: transparent;
-            color: var(--purple-btn);
+            color: var(--back-color);
             border: none;
             font-weight: 700;
             cursor: pointer;
@@ -71,7 +71,7 @@
             width: fit-content;
         }
         .back-btn:hover {
-            color: var(--purple-hover);
+            color: var(--back-hover);
         }
 
         .search-container {
@@ -250,6 +250,7 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 20px;
+            gap: 10px;
         }
 
         .btn-delete {
@@ -263,6 +264,20 @@
             transition: background 0.2s;
         }
         .btn-delete:hover { background-color: #dc2626; }
+
+        .btn-edit {
+            background-color: #fde047 !important;
+            color: #292524 !important;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 800;
+            transition: background 0.2s;
+        }
+        .btn-edit:hover { 
+            background-color: #facc15 !important; 
+        }
 
         .btn-save {
             background-color: var(--card-yellow);
@@ -292,7 +307,6 @@
             font-weight: 600;
         }
 
-        /* Интерактивный селект статуса в таблице */
         .status-select {
             padding: 6px 10px;
             border-radius: 6px;
@@ -365,28 +379,31 @@
                 </div>
                 <div class="modal-actions">
                     <button class="btn-delete" id="deleteDealerBtn">Удалить карточку</button>
-                    <button class="clients-btn" onclick="closeDealerModal()" style="font-size:0.85rem; padding: 8px 16px;">Закрыть</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-edit" id="editDealerBtn">Править</button>
+                        <button class="clients-btn" onclick="closeDealerModal()" style="font-size:0.85rem; padding: 8px 16px;">Закрыть</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно добавления нового дилера -->
+    <!-- Модальное окно добавления/редактирования дилера -->
     <div id="addDealerModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Добавить новый дилерский центр</h3>
+                <h3 id="addDealerModalTitle">Добавить новый дилерский центр</h3>
                 <button class="close-modal" onclick="closeAddDealerModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="addDealerForm" onsubmit="saveNewDealer(event)">
+                <form id="addDealerForm" onsubmit="saveDealerForm(event)">
                     <input type="text" id="newTitle" class="form-control-custom" placeholder="Название *" required autocomplete="off">
                     <input type="text" id="newCity" class="form-control-custom" placeholder="Город *" required autocomplete="off">
                     <input type="text" id="newModels" class="form-control-custom" placeholder="Модели" autocomplete="off">
                     <input type="text" id="newPrices" class="form-control-custom" placeholder="Цены" autocomplete="off">
                     <input type="text" id="newPayment" class="form-control-custom" placeholder="Способы оплаты" autocomplete="off">
                     <input type="text" id="newOther" class="form-control-custom" placeholder="Прочее" autocomplete="off">
-                    <button type="submit" class="btn-save">Сохранить карточку</button>
+                    <button type="submit" class="btn-save" id="dealerSubmitBtn">Сохранить карточку</button>
                 </form>
             </div>
         </div>
@@ -429,7 +446,7 @@
             <div class="modal-body">
                 <form id="addClientForm" onsubmit="saveNewClient(event)">
                     <input type="text" id="clientName" class="form-control-custom" placeholder="Имя клиента *" required autocomplete="off">
-                    <input type="text" id="clientPhone" class="form-control-custom" placeholder="Номер телефона *" required autocomplete="off" oninput="this.value = this.value.replace(/\D/g, '')">
+                    <input type="text" id="clientPhone" class="form-control-custom" placeholder="+7 *** - *** ** **" required autocomplete="off" oninput="formatPhoneInput(this)">
                     <input type="text" id="clientCity" class="form-control-custom" placeholder="Город *" required autocomplete="off">
                     <div class="detail-row" style="margin-bottom: 15px;">
                         <label>Статус</label>
@@ -455,13 +472,14 @@
         ];
 
         let clients = JSON.parse(localStorage.getItem('clients_data_v1')) || [
-            { id: 1, name: 'Алексей Смирнов', phone: '79991112233', city: 'Москва', status: 'Лид' },
-            { id: 2, name: 'Иван Петров', phone: '79112223344', city: 'Санкт-Петербург', status: 'Недозвон' },
-            { id: 3, name: 'Ольга Васильева', phone: '79223334455', city: 'Екатеринбург', status: 'Купил' },
-            { id: 4, name: 'Дмитрий Соколов', phone: '79004445566', city: 'Москва', status: 'Отказ' }
+            { id: 1, name: 'Алексей Смирнов', phone: '+7 999 - 111 22 33', city: 'Москва', status: 'Лид' },
+            { id: 2, name: 'Иван Петров', phone: '+7 911 - 222 33 44', city: 'Санкт-Петербург', status: 'Недозвон' },
+            { id: 3, name: 'Ольга Васильева', phone: '+7 922 - 333 44 55', city: 'Екатеринбург', status: 'Купил' },
+            { id: 4, name: 'Дмитрий Соколов', phone: '+7 900 - 444 55 66', city: 'Москва', status: 'Отказ' }
         ];
 
         let currentActiveDealerId = null;
+        let editingDealerId = null;
 
         function renderDealers(dataToRender = dealers) {
             const grid = document.getElementById('dealersGrid');
@@ -509,6 +527,11 @@
                 deleteDealer(id);
             };
 
+            document.getElementById('editDealerBtn').onclick = function() {
+                closeDealerModal();
+                openEditDealerModal(id);
+            };
+
             document.getElementById('dealerModal').style.display = 'flex';
         }
         function closeDealerModal() {
@@ -524,21 +547,70 @@
             }
         }
 
-        function openAddDealerModal() { document.getElementById('addDealerModal').style.display = 'flex'; }
-        function closeAddDealerModal() { document.getElementById('addDealerModal').style.display = 'none'; }
+        function openAddDealerModal() {
+            editingDealerId = null;
+            document.getElementById('addDealerModalTitle').innerText = 'Добавить новый дилерский центр';
+            document.getElementById('dealerSubmitBtn').innerText = 'Сохранить карточку';
+            document.getElementById('addDealerForm').reset();
+            document.getElementById('addDealerModal').style.display = 'flex';
+        }
 
-        function saveNewDealer(e) {
+        function openEditDealerModal(id) {
+            const dealer = dealers.find(d => d.id === id);
+            if (!dealer) return;
+            editingDealerId = id;
+
+            document.getElementById('addDealerModalTitle').innerText = 'Редактировать дилерский центр';
+            document.getElementById('dealerSubmitBtn').innerText = 'Обновить карточку';
+
+            document.getElementById('newTitle').value = dealer.name || '';
+            document.getElementById('newCity').value = dealer.city || '';
+            document.getElementById('newModels').value = dealer.models || '';
+            document.getElementById('newPrices').value = dealer.prices || '';
+            document.getElementById('newPayment').value = dealer.payment || '';
+            document.getElementById('newOther').value = dealer.other || '';
+
+            document.getElementById('addDealerModal').style.display = 'flex';
+        }
+
+        function closeAddDealerModal() { 
+            document.getElementById('addDealerModal').style.display = 'none'; 
+            editingDealerId = null;
+        }
+
+        function saveDealerForm(e) {
             e.preventDefault();
-            const newDealer = {
-                id: Date.now(),
-                name: document.getElementById('newTitle').value.trim(),
-                city: document.getElementById('newCity').value.trim(),
-                models: document.getElementById('newModels').value.trim(),
-                prices: document.getElementById('newPrices').value.trim(),
-                payment: document.getElementById('newPayment').value.trim(),
-                other: document.getElementById('newOther').value.trim()
-            };
-            dealers.push(newDealer);
+            
+            const nameVal = document.getElementById('newTitle').value.trim();
+            const cityVal = document.getElementById('newCity').value.trim();
+            const modelsVal = document.getElementById('newModels').value.trim();
+            const pricesVal = document.getElementById('newPrices').value.trim();
+            const paymentVal = document.getElementById('newPayment').value.trim();
+            const otherVal = document.getElementById('newOther').value.trim();
+
+            if (editingDealerId) {
+                const dealer = dealers.find(d => d.id === editingDealerId);
+                if (dealer) {
+                    dealer.name = nameVal;
+                    dealer.city = cityVal;
+                    dealer.models = modelsVal;
+                    dealer.prices = pricesVal;
+                    dealer.payment = paymentVal;
+                    dealer.other = otherVal;
+                }
+            } else {
+                const newDealer = {
+                    id: Date.now(),
+                    name: nameVal,
+                    city: cityVal,
+                    models: modelsVal,
+                    prices: pricesVal,
+                    payment: paymentVal,
+                    other: otherVal
+                };
+                dealers.push(newDealer);
+            }
+
             localStorage.setItem('dealers_data_v1', JSON.stringify(dealers));
             document.getElementById('addDealerForm').reset();
             closeAddDealerModal();
@@ -601,6 +673,29 @@
             else if (status === 'Отказ') selectElement.classList.add('status-otkaz');
             else if (status === 'Купил') selectElement.classList.add('status-kupil');
             else selectElement.classList.add('status-lid');
+        }
+
+        function formatPhoneInput(input) {
+            let numbers = input.value.replace(/\D/g, '').substring(0, 11);
+            let result = '';
+
+            if (numbers.length > 0) {
+                result = '+' + numbers.substring(0, 1);
+            }
+            if (numbers.length > 1) {
+                result += ' ' + numbers.substring(1, 4);
+            }
+            if (numbers.length >= 4) {
+                result += ' - ' + numbers.substring(4, 7);
+            }
+            if (numbers.length >= 7) {
+                result += ' ' + numbers.substring(7, 9);
+            }
+            if (numbers.length >= 9) {
+                result += ' ' + numbers.substring(9, 11);
+            }
+
+            input.value = result;
         }
 
         function openAddClientModal() { document.getElementById('addClientModal').style.display = 'flex'; }
